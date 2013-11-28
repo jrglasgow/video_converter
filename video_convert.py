@@ -1,6 +1,6 @@
 #! /bin/env python
 
-import os, sys, qtfaststart
+import os, sys
 
 def convert_file(orig_file_name):
   orig_file_ext = orig_file_name.split('.')[-1]
@@ -11,21 +11,20 @@ def convert_file(orig_file_name):
   command = "ffmpeg -i %s -acodec aac -strict -2 -ab 128k -ar 44100 -vcodec h264 -b 800K %s -y" % (orig_file_name, new_file_name)
   command = "time %s" % command
   # convert the file
-  os.system(command)
+  exit_code = os.system(command)
 
-  # use qtfaststart to make the new file streaming ready
-  os.system("qtfaststart -inter 500 %s" % (new_file_name))
-  # move the original file
-  orig_file_new_name = orig_file_name.replace('.%s' % orig_file_ext, '_%s' % orig_file_ext)
-  move_command = 'mv %s %s' % (orig_file_name, orig_file_new_name)
-  os.system(move_command)
-  print "\n"
-  print "%s created and original file moved to %s" % (new_file_name, orig_file_new_name)
+  if (exit_code == 0):
+    # use qtfaststart to make the new file streaming ready
+    os.system("qtfaststart %s" % (new_file_name))
+    # move the original file
+    orig_file_new_name = orig_file_name.replace('.%s' % orig_file_ext, '_%s' % orig_file_ext)
+    move_command = 'mv %s %s' % (orig_file_name, orig_file_new_name)
+    os.system(move_command)
+    print "\n"
+    print "%s created and original file moved to %s" % (new_file_name, orig_file_new_name)
   pass
 
 if __name__ == "__main__":
   files_to_convert = sys.argv[1:]
   for file_to_convert in files_to_convert:
     convert_file(file_to_convert)
-
-
