@@ -22,6 +22,9 @@ def convert_file(orig_file_name):
     os.system(move_command)
     print "\n"
     print "%s created and original file moved to %s" % (new_file_name, orig_file_new_name)
+  else:
+    os.system("rm %s" % (new_file_name))
+    print "Converting %s failed, please try again." % orig_file_name
   pass
 
 if __name__ == "__main__":
