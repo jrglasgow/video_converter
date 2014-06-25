@@ -5,7 +5,7 @@ Python script to convert a batch of files to H.264/MP4 using ffmpeg
 
 The script has been modified to use the -movflags faststart option now in ffmpeg so qtfaststart is not necessary.
 
-The files are converted to 800kbps video 128k audio with fastart optimizing for web streaming.
+The files are converted to 800kbps video 128k audio with faststart optimizing for web streaming.
 
 Usage
 -----
