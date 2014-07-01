@@ -5,7 +5,8 @@ import os, sys, json
 def create_video_filter(orig_file_name):
   probe_file = '/tmp/ffprobe-%s.txt' % orig_file_name
   # use ffprobe to get the width of the original file
-  probe_command = 'ffprobe -show_streams -select_streams v -of json %s 1>&2> %s' % (orig_file_name, probe_file)
+  probe_command = 'ffprobe -show_streams -select_streams v -of json "%s" 1>&2> "%s"' % (orig_file_name, probe_file)
+  #print 'probe_command: %s' % probe_command
   os.system(probe_command)
   probe_file = open(probe_file)
   file_data = json.load(probe_file)
@@ -38,8 +39,6 @@ def convert_file(orig_file_name):
   exit_code = os.system(command)
 
   if (exit_code == 0):
-    # use qtfaststart to make the new file streaming ready
-    #os.system("qtfaststart %s" % (new_file_name))
     # move the original file
     orig_file_new_name = orig_file_name.replace('.%s' % orig_file_ext, '_%s' % orig_file_ext)
     move_command = 'mv "%s" "%s"' % (orig_file_name, orig_file_new_name)
