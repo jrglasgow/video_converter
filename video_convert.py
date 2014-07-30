@@ -3,7 +3,7 @@
 import os, sys, json
 
 def create_video_filter(orig_file_name):
-  probe_file = '/tmp/ffprobe-%s.txt' % orig_file_name
+  probe_file = '/tmp/ffprobe-%s.txt' % orig_file_name.split('/')[-1]
   # use ffprobe to get the width of the original file
   probe_command = 'ffprobe -show_streams -select_streams v -of json "%s" 1>&2> "%s"' % (orig_file_name, probe_file)
   #print 'probe_command: %s' % probe_command
