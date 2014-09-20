@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import os, sys, json
+import os, os.path, sys, json, re
 
 def create_video_filter(orig_file_name):
   probe_file = '/tmp/ffprobe-%s.txt' % orig_file_name.split('/')[-1]
@@ -23,16 +23,31 @@ def create_video_filter(orig_file_name):
   video_filter =  '-vf "scale=%s:%s"' % (scale_width, scale_height)
   return video_filter
 
+def create_new_file_name(orig_file_name):
+  # check to see if search/replace parameters have been passed
+  if ('file-search' in params.keys() and 'file-replace' in params.keys()):
+    s = params['file-search']
+    p = re.compile(s)
+    replace = params['file-replace']
+    result =  re.sub(p, replace, orig_file_name)
+    # replace spaces with hyphens
+    result = result.replace(' ', '-')
+    return result
+  else:
+    return orig_file_name
+  pass
+
 def convert_file(orig_file_name):
   orig_file_ext = orig_file_name.split('.')[-1]
   print "\n\n\n\n"
   print "Starting to convert %s..." % orig_file_name
-  new_file_name = orig_file_name.replace(orig_file_ext, 'mp4')
+  new_file_name = create_new_file_name(orig_file_name.replace(orig_file_ext, 'mp4'))
+  #print "new_file_name: %s" % new_file_name
 
   # create the video filter
   video_filter = create_video_filter(orig_file_name);
   # create the command to convert the file
-  command = 'ffmpeg -i "%s" %s  -acodec aac -strict -2 -ab 128k -ar 44100 -vcodec h264 -vb 800K -y -movflags +faststart "%s" ' % (orig_file_name, video_filter, new_file_name)
+  command = 'ffmpeg -i "%s" %s  -acodec aac -strict -2 -ab %sk -ar 44100 -vcodec h264 -vb %sK -y -movflags +faststart "%s" ' % (orig_file_name, video_filter, ffmpeg_args['ab'], ffmpeg_args['vb'], new_file_name)
   command = "time %s" % command
   #print 'command: %s' % command
   # convert the file
@@ -50,7 +65,61 @@ def convert_file(orig_file_name):
     print "Converting %s failed, please try again." % orig_file_name
   pass
 
+def output_help():
+  data = {
+    'script-name': sys.argv[0].split('/')[-1]  # script name
+  }
+  print """
+  Video Converter
+
+  Usage:
+      Single file
+        %(script-name)s {options} file_name.avi
+      Batch processing of files
+        %(script-name)s {optione} *.avi
+
+  Options:
+        -ab             Set ffmpeg audio bitrate (128)kbps
+        -vb             Set ffmpeg video bitrate (800)kbps
+
+        --file-search   Regular Epression Pattern for file name change
+        --file-replace  replacement pattern for file name change
+  """ % data
+
+  return
+
 if __name__ == "__main__":
-  files_to_convert = sys.argv[1:]
+  ffmpeg_args = {
+    'ab': 128, # audio bitrate is 128kbps by default
+    'vb': 800, # video bitrate is 800K by default
+  }
+  params = {}
+  args = sys.argv[1:]
+  files_to_convert = []
+  for arg in args:
+    # print "arg: %s" % arg
+    if ('--' in arg):
+      param_name = arg.split('--')[1].split('=')[0]
+      if (param_name == 'help'):
+        output_help()
+        exit()
+      param = arg.split('=')[1]
+
+      params[param_name] = param
+      #if (param_name == 'file-search' or param_name == 'file-replace'):
+      #if (param_name == 'file-search'):
+        #print 'param_name : %s' % param_name
+        #print 'param : %s' % arg.split('=')[1]
+        #params[param_name] = re.compile(arg.split('=')[1])
+        #pass
+    elif (arg[0] == '-'):
+      # this is an argument not a file to convert
+
+      ffmpeg_args[arg.split('-')[1].split('=')[0]] = arg.split('=')[1]
+    elif (os.path.isfile(arg)) :
+      # we have confirmed that the argument is a file
+
+      files_to_convert.append(arg)
+  print "ffmpeg_args: %s" % ffmpeg_args
   for file_to_convert in files_to_convert:
     convert_file(file_to_convert)
