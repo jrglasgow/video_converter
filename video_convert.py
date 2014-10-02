@@ -28,6 +28,7 @@ def create_new_file_name(orig_file_name):
   if ('file-search' in params.keys() and 'file-replace' in params.keys()):
     s = params['file-search']
     p = re.compile(s)
+    #print 'p => %s' % p.pattern
     replace = params['file-replace']
     result =  re.sub(p, replace, orig_file_name)
     # replace spaces with hyphens
@@ -42,7 +43,7 @@ def convert_file(orig_file_name):
   print "\n\n\n\n"
   print "Starting to convert %s..." % orig_file_name
   new_file_name = create_new_file_name(orig_file_name.replace(orig_file_ext, 'mp4'))
-  #print "new_file_name: %s" % new_file_name
+  print "new_file_name: %s" % new_file_name
 
   # create the video filter
   video_filter = create_video_filter(orig_file_name);
@@ -78,15 +79,24 @@ def output_help():
       Batch processing of files
         %(script-name)s {optione} *.avi
 
+      Batch processing of files with regex name replacement - example
+        %(script-name)s *.avi --file-search='Castle\.2009\.(.*)\.HDTV.XviD-LOL.*' --file-replace='Castle-(2009).\1.mp4'
+
   Options:
         -ab             Set ffmpeg audio bitrate (128)kbps
         -vb             Set ffmpeg video bitrate (800)kbps
 
-        --file-search   Regular Epression Pattern for file name change
-        --file-replace  replacement pattern for file name change
+        --file-search   Regular Epression Pattern for file name change - remember case counts
+        --file-replace  replacement pattern for file name change - for groupings use \1 instead of $1
+        --test-replace  returns a list of the potential file names from the --file-replace argument
   """ % data
 
   return
+
+def simulate_file_name_replace(files_to_convert):
+  for file_to_convert in files_to_convert:
+    print "%s => %s" % (file_to_convert, create_new_file_name(file_to_convert))
+  pass
 
 if __name__ == "__main__":
   ffmpeg_args = {
@@ -97,21 +107,18 @@ if __name__ == "__main__":
   args = sys.argv[1:]
   files_to_convert = []
   for arg in args:
-    # print "arg: %s" % arg
     if ('--' in arg):
       param_name = arg.split('--')[1].split('=')[0]
       if (param_name == 'help'):
         output_help()
         exit()
-      param = arg.split('=')[1]
+      if (len(arg.split('=')) > 1):
+        param = arg.split('=')[1]
+      else:
+        param = 1
 
       params[param_name] = param
-      #if (param_name == 'file-search' or param_name == 'file-replace'):
-      #if (param_name == 'file-search'):
-        #print 'param_name : %s' % param_name
-        #print 'param : %s' % arg.split('=')[1]
-        #params[param_name] = re.compile(arg.split('=')[1])
-        #pass
+
     elif (arg[0] == '-'):
       # this is an argument not a file to convert
 
@@ -121,5 +128,10 @@ if __name__ == "__main__":
 
       files_to_convert.append(arg)
   print "ffmpeg_args: %s" % ffmpeg_args
+
+  if ('test-replace' in params.keys()):
+    simulate_file_name_replace(files_to_convert)
+    exit()
+
   for file_to_convert in files_to_convert:
     convert_file(file_to_convert)
