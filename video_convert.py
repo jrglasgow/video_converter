@@ -33,6 +33,10 @@ def create_new_file_name(orig_file_name):
     result =  re.sub(p, replace, orig_file_name)
     # replace spaces with hyphens
     result = result.replace(' ', '-')
+
+    if '.mp4' not in result:
+      result = result.replace(result.split('.')[-1], 'mp4')
+      pass
     return result
   else:
     return orig_file_name
@@ -42,7 +46,7 @@ def convert_file(orig_file_name):
   orig_file_ext = orig_file_name.split('.')[-1]
   print "\n\n\n\n"
   print "Starting to convert %s..." % orig_file_name
-  new_file_name = create_new_file_name(orig_file_name.replace(orig_file_ext, 'mp4'))
+  new_file_name = create_new_file_name(orig_file_name)
   print "new_file_name: %s" % new_file_name
 
   # create the video filter
@@ -50,7 +54,7 @@ def convert_file(orig_file_name):
   # create the command to convert the file
   command = 'ffmpeg -i "%s" %s  -acodec aac -strict -2 -ab %sk -ar 44100 -vcodec h264 -vb %sK -y -movflags +faststart "%s" ' % (orig_file_name, video_filter, ffmpeg_args['ab'], ffmpeg_args['vb'], new_file_name)
   command = "time %s" % command
-  #print 'command: %s' % command
+  print 'convert command: %s' % command
   # convert the file
   exit_code = os.system(command)
 
@@ -68,8 +72,10 @@ def convert_file(orig_file_name):
 
 def output_help():
   data = {
-    'script-name': sys.argv[0].split('/')[-1]  # script name
+    'script-name': sys.argv[0].split('/')[-1],  # script name
+    'slash_one':   '%s%s' % ('\\', '1'),
   }
+
   print """
   Video Converter
 
@@ -77,18 +83,18 @@ def output_help():
       Single file
         %(script-name)s {options} file_name.avi
       Batch processing of files
-        %(script-name)s {optione} *.avi
+        %(script-name)s {options} *.avi
 
       Batch processing of files with regex name replacement - example
-        %(script-name)s *.avi --file-search='Castle\.2009\.(.*)\.HDTV.XviD-LOL.*' --file-replace='Castle-(2009).\1.mp4'
+        %(script-name)s *.avi --file-search='Castle\.2009\.(.*)\.HDTV.XviD-LOL.*' --file-replace='Castle-(2009).%(slash_one)s.mp4'
 
   Options:
-        -ab             Set ffmpeg audio bitrate (128)kbps
-        -vb             Set ffmpeg video bitrate (800)kbps
+        -ab=128           Set ffmpeg audio bitrate (128)kbps
+        -vb=800           Set ffmpeg video bitrate (800)kbps
 
-        --file-search   Regular Epression Pattern for file name change - remember case counts
-        --file-replace  replacement pattern for file name change - for groupings use \1 instead of $1
-        --test-replace  returns a list of the potential file names from the --file-replace argument
+        --file-search     Regular Epression Pattern for file name change - remember case counts
+        --file-replace    replacement pattern for file name change - for groupings use %(slash_one)s instead of $1
+        --test-replace    returns a list of the potential file names from the --file-replace argument
   """ % data
 
   return
