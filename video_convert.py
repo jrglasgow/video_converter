@@ -1,17 +1,13 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
-import os, os.path, sys, json, re
+import os, os.path, sys, json, re, subprocess
 
 def create_video_filter(orig_file_name):
-  probe_file = '/tmp/ffprobe-%s.txt' % orig_file_name.split('/')[-1]
   # use ffprobe to get the width of the original file
-  probe_command = 'ffprobe -show_streams -select_streams v -of json "%s" 1>&2> "%s"' % (orig_file_name, probe_file)
-  #print 'probe_command: %s' % probe_command
-  os.system(probe_command)
-  probe_file = open(probe_file)
-  file_data = json.load(probe_file)
-  probe_file.close()
-
+  result = subprocess.run(['ffprobe', '-show_streams', '-select_streams', 'v', '-of', 'json', orig_file_name], stdout=subprocess.PIPE)
+  print('result.stdout => %s' % result.stdout)
+  file_data = json.loads(result.stdout)
+  print('file_data => %s' % file_data)
   width = file_data['streams'][0]['width']
 
   # make sure the width is an even number
@@ -28,33 +24,32 @@ def create_new_file_name(orig_file_name):
   if ('file-search' in params.keys() and 'file-replace' in params.keys()):
     s = params['file-search']
     p = re.compile(s)
-    #print 'p => %s' % p.pattern
+    print('p => %s' % p.pattern)
     replace = params['file-replace']
     result =  re.sub(p, replace, orig_file_name)
     # replace spaces with hyphens
-    result = result.replace(' ', '-')
-
-    if '.mp4' not in result:
-      result = result.replace(result.split('.')[-1], 'mp4')
-      pass
-    return result
+    file_name = result.replace(' ', '-')
   else:
-    return orig_file_name
-  pass
+    file_name = orig_file_name
+
+  if '.mp4' not in result:
+    file_name = file_name.replace(result.split('.')[-1], 'mp4')
+    pass
+  return file_name
 
 def convert_file(orig_file_name):
   orig_file_ext = orig_file_name.split('.')[-1]
-  print "\n\n\n\n"
-  print "Starting to convert %s..." % orig_file_name
+  print("\n\n\n\n")
+  print("Starting to convert %s..." % orig_file_name)
   new_file_name = create_new_file_name(orig_file_name)
-  print "new_file_name: %s" % new_file_name
+  print("new_file_name: %s" % new_file_name)
 
   # create the video filter
-  video_filter = create_video_filter(orig_file_name);
+  video_filter = create_video_filter(orig_file_name)
   # create the command to convert the file
   command = 'ffmpeg -i "%s" %s  -acodec aac -strict -2 -ab %sk -ar 44100 -vcodec h264 -vb %sK -y -movflags +faststart "%s" ' % (orig_file_name, video_filter, ffmpeg_args['ab'], ffmpeg_args['vb'], new_file_name)
   command = "time %s" % command
-  print 'convert command: %s' % command
+  print('convert command: %s' % command)
   # convert the file
   exit_code = os.system(command)
 
@@ -63,11 +58,11 @@ def convert_file(orig_file_name):
     orig_file_new_name = orig_file_name.replace('.%s' % orig_file_ext, '_%s' % orig_file_ext)
     move_command = 'mv "%s" "%s"' % (orig_file_name, orig_file_new_name)
     os.system(move_command)
-    print "\n"
-    print "%s created and original file moved to %s" % (new_file_name, orig_file_new_name)
+    print("\n")
+    print("%s created and original file moved to %s" % (new_file_name, orig_file_new_name))
   else:
     os.system('rm "%s"' % (new_file_name))
-    print "Converting %s failed, please try again." % orig_file_name
+    print("Converting %s failed, please try again." % orig_file_name)
   pass
 
 def output_help():
@@ -76,7 +71,7 @@ def output_help():
     'slash_one':   '%s%s' % ('\\', '1'),
   }
 
-  print """
+  print("""
   Video Converter
 
   Usage:
@@ -95,13 +90,13 @@ def output_help():
         --file-search     Regular Epression Pattern for file name change - remember case counts
         --file-replace    replacement pattern for file name change - for groupings use %(slash_one)s instead of $1
         --test-replace    returns a list of the potential file names from the --file-replace argument
-  """ % data
+  """ % data)
 
   return
 
 def simulate_file_name_replace(files_to_convert):
   for file_to_convert in files_to_convert:
-    print "%s => %s" % (file_to_convert, create_new_file_name(file_to_convert))
+    print("%s => %s" % (file_to_convert, create_new_file_name(file_to_convert)))
   pass
 
 if __name__ == "__main__":
@@ -133,7 +128,7 @@ if __name__ == "__main__":
       # we have confirmed that the argument is a file
 
       files_to_convert.append(arg)
-  print "ffmpeg_args: %s" % ffmpeg_args
+  print("ffmpeg_args: %s" % ffmpeg_args)
 
   if ('test-replace' in params.keys()):
     simulate_file_name_replace(files_to_convert)
